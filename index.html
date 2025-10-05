@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jogo Bíblico de Ítalo Rocha</title>
+<style>
+body{margin:0;font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;transition:background 0.5s;overflow:hidden}
+.app{background:rgba(0,0,0,0.05);border-radius:16px;padding:20px;max-width:800px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.4);text-align:center;color:#fff;transition:all 0.5s;position:relative;z-index:1}
+h1{margin-bottom:10px}
+button{padding:12px 18px;margin:6px;border-radius:10px;border:none;font-weight:600;cursor:pointer;transition:all 0.3s ease;font-size:1rem}
+button:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.2)}
+.btn-option{background:#fff;color:#0b1726;width:100%;text-align:left;margin:6px 0;transition:all 0.3s ease;position:relative;overflow:hidden}
+.btn-option.correct{background:#16a34a;color:#fff;animation:correctAnim 0.5s}
+.btn-option.wrong{background:#ef4444;color:#fff;animation:wrongAnim 0.5s}
+@keyframes correctAnim{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes wrongAnim{0%{transform:scale(1)}50%{transform:scale(1.1) rotate(-5deg)}100%{transform:scale(1)}}
+.progress{height:14px;background:rgba(255,255,255,0.2);border-radius:10px;overflow:hidden;margin:10px 0}
+.progress-bar{height:100%;width:0%;background:#ffb703;transition:width 0.4s}
+.vidas{font-size:1.5rem;margin:8px 0}
+.score{font-size:1.5rem;margin:5px}
+.fadeIn{animation:fadeIn 0.6s}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+.confetti-piece{width:10px;height:10px;position:absolute;top:0;animation:fall 2s linear forwards;border-radius:50%}
+@keyframes fall{0%{transform:translateY(0) rotate(0deg)}100%{transform:translateY(500px) rotate(360deg)}}
+.firework{position:absolute;width:5px;height:5px;border-radius:50%;pointer-events:none;z-index:10}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<h1>Jogo Bíblico de Ítalo Rocha</h1>
+<div id="gameArea">
+<button class="btn-option" onclick="startPhase()">Iniciar Jogo</button>
+</div>
+<audio id="acerto" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="erro" src="https://actions.google.com/sounds/v1/cartoon/boing.ogg"></audio>
+</div>
+
+<script>
+// cores por fase
+const phaseColors = ["#0b4f8a","#16a34a","#f97316","#7c3aed"];
+
+const levels = [
+  {id:'estudante', title:'Estudante', end:'Parabéns! Você completou a fase Estudante.', msg:'Continue se esforçando!'},
+  {id:'publicador', title:'Publicador', end:'Ótimo! Você completou a fase Publicador.', msg:'A fé está crescendo!'},
+  {id:'pioneiro', title:'Pioneiro', end:'Excelente! Você completou a fase Pioneiro.', msg:'Você está indo muito bem!'},
+  {id:'superintendente', title:'Superintendente', end:'Parabéns! Você concluiu todas as fases do Jogo Bíblico.', msg:'Uma verdadeira bênção de conhecimento!'}
+];
+
+// perguntas completas
+const questions = {
+  estudante:[
+    {q:"Quem foi obediente a Jeová e construiu a arca para salvar sua família e os animais do dilúvio?", opts:["Moisés","Abraão","Noé","Elias"], a:2},
+    {q:"Qual foi o sinal que Deus deu prometendo que nunca mais destruiria toda a terra com um dilúvio?", opts:["Estrela","Arco-íris","Pomba","Montanha"], a:1},
+    {q:"Quem recebeu de Jeová as tábuas com os Dez Mandamentos no monte Sinai?", opts:["Moisés","Arão","Elias","Josué"], a:0},
+    {q:"Quem foi o primeiro homem criado por Jeová?", opts:["Adão","Sete","Caim","Abel"], a:0},
+    {q:"Quem foi vendido por seus irmãos e depois se tornou um líder no Egito?", opts:["José","Balaão","Efraim","Noé"], a:0},
+    {q:"Quem enfrentou o gigante Golias e venceu com fé em Jeová?", opts:["Davi","Sansão","Saul","Neemias"], a:0},
+    {q:"Qual profeta foi engolido por um grande peixe por fugir da ordem de Jeová?", opts:["Jonas","Amós","Oséias","Joel"], a:0},
+    {q:"Qual rei pediu a Jeová sabedoria para governar Israel com justiça?", opts:["Saul","Salomão","Davi","Ezequias"], a:1},
+    {q:"Qual livro contém muitos cânticos e orações, conhecidos como salmos?", opts:["Provérbios","Salmos","Lamentações","Ester"], a:1},
+    {q:"Quem demonstrou grande fé ao construir um altar para Jeová em obediência?", opts:["Abraão","Caim","Davi","Samuel"], a:0}
+  ],
+  publicador:[
+    {q:"Quem desafiou os profetas de Baal e provou que Jeová é o Deus verdadeiro?", opts:["Elias","Eliseu","Isaías","Jeremias"], a:0},
+    {q:"Qual herói perdeu sua força quando o cabelo foi cortado?", opts:["Sansão","Davi","Saul","Elias"], a:0},
+    {q:"Qual profeta teve a visão de ossos secos representando a restauração de Israel?", opts:["Ezequiel","Isaías","Amós","Malaquias"], a:0},
+    {q:"Quem interpretou os sonhos do faraó, ajudando o Egito a se preparar para fome?", opts:["Moisés","José","Daniel","Josué"], a:1},
+    {q:"Qual cidade foi destruída por Jeová, sendo poupada apenas a família de Ló?", opts:["Jericó","Nínive","Babilônia","Sodoma"], a:3},
+    {q:"Quem foi ungido rei após Saul e consolidou o reino de Israel?", opts:["Davi","Salomão","Elias","Jônatas"], a:0},
+    {q:"Quem, filho de Davi, escreveu muitos provérbios e se destacou pela sabedoria?", opts:["Salomão","Ezequias","Josias","Matusalém"], a:0},
+    {q:"Qual apóstolo escreveu cartas importantes dirigidas à congregação cristã?", opts:["João","Pedro","Paulo","Tiago"], a:2},
+    {q:"Qual foi o primeiro milagre público de Jesus registrado?", opts:["Multiplicação de pães","Cura de cego","Transformar água em vinho","Caminhar sobre águas"], a:2},
+    {q:"Quem foi traído por um beijo e preso antes de sua morte?", opts:["Jesus","João","Pedro","Paulo"], a:0}
+  ],
+  pioneiro:[
+    {q:"Em qual livro são descritas as 7 trombetas e 7 taças da ira de Deus?", opts:["Daniel","Apocalipse","Ezequiel","Isaías"], a:1},
+    {q:"Qual profeta teve visão do trono de Deus e de seres viventes no céu?", opts:["Daniel","Ezequiel","Jeremias","Isaías"], a:1},
+    {q:"Qual líder liderou a reconstrução de Jerusalém após o exílio babilônico?", opts:["Neemias","Esdras","Josué","Gideão"], a:0},
+    {q:"Qual profeta foi levado ao céu em um redemoinho de fogo?", opts:["Elias","Eliseu","Isaías","Ezequiel"], a:0},
+    {q:"Quem escreveu aproximadamente 13 cartas do Novo Testamento?", opts:["João","Paulo","Pedro","Tiago"], a:1},
+    {q:"Qual festa judaica relembra a libertação do Egito?", opts:["Páscoa","Pentecostes","Rosh Hashaná","Yom Kippur"], a:0},
+    {q:"Quem interpretou a escrita na parede durante o reinado de Belsazar?", opts:["Daniel","Ezequiel","Jeremias","Moisés"], a:0},
+    {q:"Qual livro fala sobre o 'servo sofredor' que cumpriu a vontade de Jeová?", opts:["Isaías","Amós","Joel","Jonas"], a:0},
+    {q:"Em que cidade Paulo foi preso e apelou ao imperador?", opts:["Roma","Cesareia","Filipos","Corinto"], a:1},
+    {q:"Quem presidiu o julgamento de Jesus antes de sua morte?", opts:["Herodes","Pilatos","Caiáfas","Pôncio"], a:1}
+  ],
+  superintendente:[
+    {q:"Na profecia das 70 semanas, de que livro se fala?", opts:["Ezequiel","Daniel","Isaías","Jeremias"], a:1},
+    {q:"Qual termo descreve a morte substitutiva de Cristo pelos pecados da humanidade?", opts:["Redenção","Expiação","Justificação","Santificação"], a:1},
+    {q:"Qual parâmetro cronológico é debatido nas profecias bíblicas?", opts:["Anos-luz","Períodos proféticos","Séculos","Dias solares"], a:1},
+    {q:"Quem foi chamado de 'apóstolo dos gentios'?", opts:["Pedro","João","Paulo","Barnabé"], a:2},
+    {q:"Qual carta trata da justificação pela fé?", opts:["Gálatas","Romanos","Hebreus","Filipenses"], a:1},
+    {q:"Que evento marca o início do cumprimento das profecias messiânicas?", opts:["Nascimento de Cristo","Batismo de João","Entrada em Jerusalém","Ressurreição"], a:0},
+    {q:"Qual profeta menor enfatiza a justiça social e obediência a Jeová?", opts:["Amós","Habacuque","Sofonias","Obadias"], a:0},
+    {q:"Quem escreveu o livro do Apocalipse na ilha de Patmos?", opts:["Pedro","João","Paulo","Lucas"], a:1},
+    {q:"Qual livro do Antigo Testamento contém muitos salmos?", opts:["Salmos","Provérbios","Eclesiastes","Isaías"], a:0},
+    {q:"Quem foi lançado na cova dos leões por orar a Jeová?", opts:["Daniel","Elias","José","Paulo"], a:0}
+  ]
+};
+
+// variáveis do jogo
+let currentLevelIndex=0, currentQuestionIndex=0, score=0, lives=3;
+
+function setBackground(){
+  document.body.style.background = `linear-gradient(135deg, ${phaseColors[currentLevelIndex]}, #2ea1ff)`;
+}
+
+function renderLives(){return '❤️'.repeat(lives)+'🤍'.repeat(3-lives);}
+
+function startPhase(){
+  setBackground();
+  const level=levels[currentLevelIndex];
+  const gameArea=document.getElementById('gameArea');
+  gameArea.innerHTML=`<h2>Fase ${currentLevelIndex+1}: ${level.title}</h2>
+  <p>Prepare-se para responder 10 perguntas!</p>
+  <button class="btn-option fadeIn" onclick="startQuestions()">Iniciar Perguntas</button>`;
+}
+
+function startQuestions(){
+  currentQuestionIndex=0; score=0; lives=3;
+  renderQuestion();
+}
+
+function renderQuestion(){
+  setBackground();
+  const gameArea=document.getElementById('gameArea');
+  const level=levels[currentLevelIndex];
+  const qList=questions[level.id];
+
+  if(lives<=0){
+    gameArea.innerHTML=`<h2>Você perdeu!</h2><p>Pontuação final: ${score}</p>
+    <button class="btn-option fadeIn" onclick="currentLevelIndex=0;startPhase()">Reiniciar Jogo</button>`;
+    return;
+  }
+
+  if(currentQuestionIndex>=qList.length){
+    gameArea.innerHTML=`<h2>${level.end}</h2><p id="finalScore">Pontuação da fase: 0</p><p>${level.msg}</p>
+    <button class="btn-option fadeIn" onclick="nextPhase()">Próxima Fase</button>`;
+    animateScore(score); confetti(); fireworks();
+    return;
+  }
+
+  const qObj=qList[currentQuestionIndex];
+  gameArea.innerHTML=`<p class="vidas">Vidas: ${renderLives()}</p>
+    <div class="progress"><div class="progress-bar" style="width:${(currentQuestionIndex/qList.length)*100}%"></div></div>
+    <h3>Pergunta ${currentQuestionIndex+1}: ${qObj.q}</h3>`;
+  qObj.opts.forEach((opt,idx)=>{
+    const btn=document.createElement('button');
+    btn.className='btn-option fadeIn';
+    btn.textContent=opt;
+    btn.onclick=()=>selectAnswer(idx);
+    gameArea.appendChild(btn);
+  });
+}
+
+function selectAnswer(idx){
+  const level=levels[currentLevelIndex];
+  const qList=questions[level.id];
+  const qObj=qList[currentQuestionIndex];
+  const buttons=document.querySelectorAll('.btn-option');
+  const audioCorrect=document.getElementById('acerto');
+  const audioWrong=document.getElementById('erro');
+
+  if(idx===qObj.a){
+    buttons[idx].classList.add('correct');
+    score+=10;
+    audioCorrect.play();
+  } else {
+    buttons[idx].classList.add('wrong');
+    buttons[qObj.a].classList.add('correct');
+    lives--;
+    audioWrong.play();
+  }
+
+  currentQuestionIndex++;
+  setTimeout(renderQuestion,800);
+}
+
+function nextPhase(){
+  currentLevelIndex++;
+  if(currentLevelIndex>=levels.length){
+    document.getElementById('gameArea').innerHTML=`<h2>Parabéns! Você completou todas as fases!</h2>
+    <p id="finalScore">Pontuação final: 0</p>
+    <button class="btn-option fadeIn" onclick="currentLevelIndex=0;startPhase()">Reiniciar Jogo</button>`;
+    animateScore(score); confetti(); fireworks();
+    return;
+  }
+  startPhase();
+}
+
+function confetti(){
+  for(let i=0;i<50;i++){
+    const c=document.createElement('div');
+    c.className='confetti-piece';
+    c.style.background=`hsl(${Math.random()*360},70%,60%)`;
+    c.style.left=Math.random()*window.innerWidth+'px';
+    c.style.animationDuration=1+Math.random()*2+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),3000);
+  }
+}
+
+function fireworks(){
+  for(let i=0;i<30;i++){
+    const f=document.createElement('div');
+    f.className='firework';
+    f.style.background=`hsl(${Math.random()*360},80%,60%)`;
+    f.style.left=Math.random()*window.innerWidth+'px';
+    f.style.top=Math.random()*window.innerHeight/2+'px';
+    document.body.appendChild(f);
+    const dur = 1 + Math.random()*1.5;
+    f.animate([{transform:'scale(0)'},{transform:'scale(1)'}],{duration:dur*500,fill:'forwards'});
+    setTimeout(()=>f.remove(),3000);
+  }
+}
+
+function animateScore(final){
+  let display = document.getElementById("finalScore");
+  if(!display) return;
+  let current=0;
+  let interval = setInterval(()=>{
+    if(current>=final){clearInterval(interval); return;}
+    current++;
+    display.textContent = `Pontuação da fase: ${current}`;
+  },50);
+}
+
+startPhase();
+</script>
+</body>
+</html>
