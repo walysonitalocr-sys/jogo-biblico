@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jogo Bíblico de Ítalo Rocha</title>
+<style>
+  body{margin:0;font-family:sans-serif;background:linear-gradient(135deg,#0b4f8a,#2ea1ff);color:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh}
+  .app{background:rgba(255,255,255,0.05);border-radius:16px;padding:20px;max-width:800px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.4)}
+  h1{text-align:center;margin-bottom:10px}
+  .center{text-align:center}
+  button{padding:12px 18px;margin:4px;border-radius:10px;border:none;font-weight:600;cursor:pointer;transition:all 0.2s ease}
+  button:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.2)}
+  .btn-start{background:#ffb703;color:#072030;font-size:1rem}
+  .btn-option{background:#fff;color:#0b1726;width:100%;text-align:left;margin:6px 0}
+  .btn-option.correct{background:#16a34a;color:#fff}
+  .btn-option.wrong{background:#ef4444;color:#fff}
+  .progress{height:14px;background:rgba(255,255,255,0.2);border-radius:10px;overflow:hidden;margin:10px 0}
+  .progress-bar{height:100%;width:0%;background:#ffb703;transition:width 0.4s}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Jogo Bíblico de Ítalo Rocha</h1>
+  <div id="gameArea" class="center">
+    <button class="btn-start" onclick="showLevels()">Selecionar Nível</button>
+  </div>
+</div>
+
+<script>
+const levels = [
+  {id:'estudante', title:'Estudante', start:'Comece com passos firmes — conhecimento básico.', end:'Muito bem! Você completou o nível Estudante.'},
+  {id:'publicador', title:'Publicador', start:'Agora aprofundando — continue estudando!', end:'Ótimo, você completou o nível Publicador.'},
+  {id:'pioneiro', title:'Pioneiro', start:'Desafios maiores — atenção aos detalhes.', end:'Excelente, você completou o nível Pioneiro.'},
+  {id:'superintendente', title:'Superintendente', start:'Nível máximo — muita profundidade.', end:'Parabéns! Você concluiu o Jogo Bíblico de Ítalo Rocha.'}
+];
+
+const questions = {
+  estudante:[
+    {q:"Quem construiu a arca?", opts:["Moisés","Abraão","Noé","Elias"], a:2},
+    {q:"Qual o sinal que Deus deu após o dilúvio?", opts:["Estrela","Arco-íris","Pomba","Montanha"], a:1},
+    {q:"Quem recebeu as tábuas da lei?", opts:["Moisés","Arão","Elias","Josué"], a:0},
+    {q:"Quem foi o primeiro homem criado por Jeová?", opts:["Adão","Sete","Caim","Abel"], a:0},
+    {q:"Quem foi vendido por seus irmãos e se tornou poderoso no Egito?", opts:["José","Balaão","Efraim","Noé"], a:0},
+    {q:"Quem matou o gigante Golias?", opts:["Davi","Sansão","Saul","Neemias"], a:0},
+    {q:"Qual profeta foi engolido por um grande peixe?", opts:["Jonas","Amós","Oséias","Joel"], a:0},
+    {q:"Qual rei pediu sabedoria a Jeová?", opts:["Saul","Salomão","Davi","Ezequias"], a:1},
+    {q:"Qual livro contém muitos cânticos e orações?", opts:["Provérbios","Salmos","Lamentações","Ester"], a:1},
+    {q:"Quem era conhecido por grande fé e construiu um altar?", opts:["Abraão","Caim","Davi","Samuel"], a:0}
+  ],
+  publicador:[
+    {q:"Quem confrontou os profetas de Baal?", opts:["Elias","Eliseu","Isaías","Jeremias"], a:0},
+    {q:"Quem perdeu sua força quando o cabelo foi cortado?", opts:["Sansão","Davi","Saul","Elias"], a:0},
+    {q:"Qual profeta teve a visão do vale de ossos secos?", opts:["Ezequiel","Isaías","Amós","Malaquias"], a:0},
+    {q:"Quem interpretou sonhos para o faraó?", opts:["Moisés","José","Daniel","Josué"], a:1},
+    {q:"Qual cidade foi destruída, sobrando Ló?", opts:["Jericó","Nínive","Babilônia","Sodoma"], a:3},
+    {q:"Quem foi ungido rei após Saul?", opts:["Davi","Salomão","Elias","Jônatas"], a:0},
+    {q:"Quem escreveu muitos provérbios e era filho de Davi?", opts:["Salomão","Ezequias","Josias","Matusalém"], a:0},
+    {q:"Qual apóstolo escreveu cartas importantes à Igreja?", opts:["João","Pedro","Paulo","Tiago"], a:2},
+    {q:"Qual foi o primeiro milagre de Jesus registrado?", opts:["Multiplicação de pães","Cura de cego","Transformar água em vinho","Caminhar sobre águas"], a:2},
+    {q:"Quem foi traído por um beijo e preso?", opts:["Jesus","João","Pedro","Paulo"], a:0}
+  ],
+  pioneiro:[
+    {q:"Em qual livro estão as 7 trombetas e 7 taças?", opts:["Daniel","Apocalipse","Ezequiel","Isaías"], a:1},
+    {q:"Quem teve a visão do trono e seres viventes?", opts:["Daniel","Ezequiel","Jeremias","Isaías"], a:1},
+    {q:"Qual líder hebreu liderou a reconstrução de Jerusalém?", opts:["Neemias","Esdras","Josué","Gideão"], a:0},
+    {q:"Que profeta foi levado ao céu em redemoinho de fogo?", opts:["Elias","Eliseu","Isaías","Ezequiel"], a:0},
+    {q:"Quem escreveu cerca de 13 cartas no Novo Testamento?", opts:["João","Paulo","Pedro","Tiago"], a:1},
+    {q:"Qual festa judaica lembra a libertação do Egito?", opts:["Páscoa","Pentecostes","Rosh Hashaná","Yom Kippur"], a:0},
+    {q:"Quem interpretou a escrita na parede do rei Belsazar?", opts:["Daniel","Ezequiel","Jeremias","Moisés"], a:0},
+    {q:"Qual livro fala sobre o 'servo sofredor'?", opts:["Isaías","Amós","Joel","Jonas"], a:0},
+    {q:"Em que cidade Paulo foi preso e apelou a César?", opts:["Roma","Cesareia","Filipos","Corinto"], a:1},
+    {q:"Quem presidiu o julgamento de Jesus?", opts:["Herodes","Pilatos","Caiáfas","Pôncio"], a:1}
+  ],
+  superintendente:[
+    {q:"Na profecia das 70 semanas, de que livro se fala?", opts:["Ezequiel","Daniel","Isaías","Jeremias"], a:1},
+    {q:"Qual termo descreve a morte substitutiva de Cristo?", opts:["Redenção","Expiação","Justificação","Santificação"], a:1},
+    {q:"Qual parâmetro cronológico é debatido em profecias?", opts:["Anos-luz","Períodos proféticos","Séculos","Dias solares"], a:1},
+    {q:"Quem foi chamado de 'apóstolo dos gentios'?", opts:["Pedro","João","Paulo","Barnabé"], a:2},
+    {q:"Qual carta trata da justificação pela fé?", opts:["Gálatas","Romanos","Hebreus","Filipenses"], a:1},
+    {q:"Que evento marca início do cumprimento de profecias messiânicas?", opts:["Nascimento de Cristo","Batismo de João","Entrada em Jerusalém","Ressurreição"], a:0},
+    {q:"Qual profeta menor fala sobre justiça social?", opts:["Amós","Habacuque","Sofonias","Obadias"], a:0},
+    {q:"Quem escreveu o livro apocalíptico na ilha de Patmos?", opts:["Pedro","João","Paulo","Lucas"], a:1},
+    {q:"Qual livro do Antigo Testamento tem muitos salmos?", opts:["Salmos","Provérbios","Eclesiastes","Isaías"], a:0},
+    {q:"Quem foi lançado na cova dos leões?", opts:["Daniel","Elias","José","Paulo"], a:0}
+  ]
+};
+
+function showLevels() {
+  const gameArea = document.getElementById('gameArea');
+  gameArea.innerHTML = `<h2>Escolha um Nível:</h2>`;
+  levels.forEach((lvl, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-start';
+    btn.style.display = 'block';
+    btn.style.margin = '8px auto';
+    btn.textContent = `${idx+1}. ${lvl.title}`;
+    btn.onclick = () => startLevel(lvl.id);
+    gameArea.appendChild(btn);
+  });
+}
+
+let currentLevel = null;
+let currentQuestionIndex = 0;
+let score = 0;
+
+function startLevel(levelId) {
+  currentLevel = levelId;
+  currentQuestionIndex = 0;
+  score = 0;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const gameArea = document.getElementById('gameArea');
+  const qList = questions[currentLevel];
+  if (currentQuestionIndex >= qList.length) {
+    gameArea.innerHTML = `<h2>Parabéns!</h2><p>${levels.find(l=>l.id===currentLevel).end}</p><p>Pontuação: ${score}</p><button onclick="showLevels()">Voltar aos níveis</button>`;
+    return;
+  }
+  const qObj = qList[currentQuestionIndex];
+  gameArea.innerHTML = `<h3>Pergunta ${currentQuestionIndex+1}: ${qObj.q}</h3>`;
+  qObj.opts.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-option';
+    btn.textContent = opt;
+    btn.onclick = () => selectAnswer(idx);
+    gameArea.appendChild(btn);
+  });
+}
+
+function selectAnswer(idx) {
+  const qObj = questions[currentLevel][currentQuestionIndex];
+  const buttons = document.querySelectorAll('.btn-option');
+  if(idx === qObj.a){
+    buttons[idx].classList.add('correct');
+    score += 10;
+  } else {
+    buttons[idx].classList.add('wrong');
+    buttons[qObj.a].classList.add('correct');
+  }
+  currentQuestionIndex++;
+  setTimeout(renderQuestion, 800);
+}
+</script>
+</body>
+</html>
