@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Jogo Bíblico de Ítalo Rocha</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;line-height:1.4;margin:0;padding:0;background:#f0f4f8;color:#111}
+  .wrap{max-width:820px;margin:28px auto;padding:20px;background:#fff;border-radius:10px;box-shadow:0 6px 22px rgba(18,38,63,.08)}
+  h1{margin:0 0 12px;font-size:1.8rem;text-align:center}
+  .question{margin:14px 0;padding:14px;border-radius:8px;background:#fbfdff;border:1px solid #eef3fb}
+  .options{display:grid;gap:8px;margin-top:10px}
+  button.opt{display:block;padding:10px 12px;border-radius:8px;border:1px solid #dbe8ff;background:white;text-align:left;cursor:pointer}
+  button.opt.correct{border-color:#2f9e44;background:#ebfff2}
+  button.opt.wrong{border-color:#e03e2f;background:#fff0f0}
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:#667}
+  .controls{display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap}
+  .btn{padding:8px 12px;border-radius:8px;border:0;background:#0b63d4;color:white;cursor:pointer}
+  .btn.secondary{background:#64748b}
+  .result{padding:12px;margin-top:12px;border-radius:10px;background:#eef2ff;text-align:center;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Jogo Bíblico de Ítalo Rocha</h1>
+  <div id="quiz-area"></div>
+
+  <div class="controls">
+    <button id="prev" class="btn secondary">Anterior</button>
+    <button id="next" class="btn secondary">Próxima</button>
+    <button id="restart" class="btn">Reiniciar</button>
+  </div>
+
+  <div id="status" class="meta"></div>
+  <div id="result" class="result" style="display:none"></div>
+</div>
+
+<script>
+const quiz = [
+  {q:"Quem foi lançado na cova dos leões por orar a Jeová? (Daniel 6)", opts:["Elias","Daniel","José","Paulo"], a:1},
+  {q:"Qual rei pediu sabedoria e foi atendido por Jeová? (1 Reis 3)", opts:["Salomão","Davi","Saul","Ezequias"], a:0},
+  {q:"Quem foi vendido pelos próprios irmãos e subiu ao poder no Egito? (Gênesis 37–41)", opts:["Isaque","Jacó","José","Benjamim"], a:2},
+  {q:"Qual profeta confrontou os profetas de Baal no Monte Carmelo? (1 Reis 18)", opts:["Amós","Elias","Isaías","Jeremias"], a:1},
+  {q:"Quem foi o primeiro homem criado por Jeová? (Gênesis 2)", opts:["Noé","Abel","Adão","Sete"], a:2},
+  {q:"Qual evento marcou a saída do povo de Israel do Egito? (Êxodo)", opts:["Restauração do templo","Êxodo","Assunção","Monarquia"], a:1},
+  {q:"Quem escreveu muitos dos Salmos? (tradição bíblica)", opts:["Moisés","Davi","Salomão","Ezequiel"], a:1},
+  {q:"Qual apóstolo é conhecido por suas viagens missionárias e cartas? (Novo Testamento)", opts:["Tiago","Pedro","Paulo","João"], a:2},
+  {q:"Qual foi o sinal que Deus deu para Noé mostrar que não destruiria mais a terra por dilúvio? (Gênesis 9)", opts:["Estrela","Arco-íris","Pomba","Montanha"], a:1},
+  {q:"Quem recebeu as tábuas da lei no Monte Sinai? (Êxodo 19–20)", opts:["Moisés","Arão","Josué","Malaquias"], a:0},
+  {q:"Qual homem foi conhecido por sua força extraordinária e depois traído pela sua companheira? (Juízes 13–16)", opts:["Sansão","Golias","Ester","Neemias"], a:0},
+  {q:"Qual profeta teve uma visão do vale de ossos secos? (Ezequiel 37)", opts:["Ezequiel","Isaías","Amós","Habacuque"], a:0}
+];
+
+let idx=0, score=0, answered=Array(quiz.length).fill(false);
+const area=document.getElementById('quiz-area'), status=document.getElementById('status'), resultBox=document.getElementById('result');
+
+function renderQuestion(i){
+  const item=quiz[i]; area.innerHTML='';
+  const qdiv=document.createElement('div'); qdiv.className='question';
+  qdiv.innerHTML=`<strong>Pergunta ${i+1} de ${quiz.length}:</strong><div style="margin-top:8px">${item.q}</div>`;
+  const opts=document.createElement('div'); opts.className='options';
+  item.opts.forEach((o,j)=>{
+    const btn=document.createElement('button'); btn.className='opt'; btn.innerText=o; btn.onclick=()=>select(i,j,btn); opts.appendChild(btn);
+  });
+  area.appendChild(qdiv); area.appendChild(opts); updateStatus();
+}
+
+function select(qIndex,optIndex,btn){
+  if(answered[qIndex]) return;
+  answered[qIndex]=true;
+  const correct=quiz[qIndex].a===optIndex;
+  if(correct){score++; btn.classList.add('correct');} 
+  else {btn.classList.add('wrong'); 
+        const buttons=document.querySelectorAll('.options button');
+        buttons.forEach(b=>{if(b.innerText===quiz[qIndex].opts[quiz[qIndex].a]) b.classList.add('correct');});
+  }
+  updateStatus();
+  if(answered.every(Boolean)) showResult();
+}
+
+function updateStatus(){status.innerText=`Score: ${score}  •  Respondidas: ${answered.filter(Boolean).length}/${quiz.length}`;}
+function showResult(){resultBox.style.display='block'; resultBox.innerHTML=`Resultado: Você acertou ${score} de ${quiz.length} (${Math.round(score/quiz.length*100)}%).`; }
+
+document.getElementById('prev').addEventListener('click',()=>{idx=Math.max(0,idx-1); renderQuestion(idx);});
+document.getElementById('next').addEventListener('click',()=>{idx=Math.min(quiz.length-1,idx+1); renderQuestion(idx);});
+document.getElementById('restart').addEventListener('click',()=>{idx=0; score=0; answered=Array(quiz.length).fill(false); resultBox.style.display='none'; renderQuestion(idx);});
+
+renderQuestion(0);
+</script>
+</body>
+</html>
