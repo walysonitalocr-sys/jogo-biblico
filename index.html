@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jogo Bíblico – Ítalo Rocha</title>
+<style>
+:root{
+  --cor1:#0b4f8a; --cor2:#16a34a; --cor3:#f97316; --cor4:#7c3aed;
+  --bg:var(--cor1); --text:#fff; --err:#ef4444; --ok:#16a34a;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,var(--bg),#2ea1ff);color:var(--text);transition:background .5s;overflow:hidden}
+.app{width:90%;max-width:700px;background:rgba(0,0,0,.15);border-radius:16px;padding:25px;box-shadow:0 8px 30px rgba(0,0,0,.4);text-align:center}
+h1{margin-bottom:10px;font-size:1.8rem}
+button{padding:12px 18px;margin:6px;border:none;border-radius:10px;font-weight:600;font-size:1rem;cursor:pointer;transition:all .3s ease}
+button:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.btn-option{background:#fff;color:#0b1726;width:100%;text-align:left}
+.btn-option.correct{background:var(--ok);color:#fff;animation:pulse .5s}
+.btn-option.wrong{background:var(--err);color:#fff;animation:shake .5s}
+@keyframes pulse{50%{transform:scale(1.05)}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.progress{height:14px;background:rgba(255,255,255,.2);border-radius:10px;overflow:hidden;margin:10px 0}
+.progress-bar{height:100%;width:0%;background:#ffb703;transition:width .4s}
+.vidas{font-size:1.5rem;margin:8px 0}
+.score{font-size:1.5rem;margin:5px}
+.explanation{font-size:0.9rem;margin:4px 0 10px 0;color:#fff}
+.confetti{position:absolute;width:10px;height:10px;background:hsl(var(--hue),70%,60%);top:-20px;animation:fall 2s linear forwards;border-radius:50%}
+@keyframes fall{to{transform:translateY(110vh)}}
+.firework{position:absolute;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:10;animation:boom 1s forwards}
+@keyframes boom{0%{transform:scale(0)}100%{transform:scale(25);opacity:0}}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <h1>Jogo Bíblico de Ítalo Rocha</h1>
+  <div id="gameArea"></div>
+  <audio id="acerto" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+  <audio id="erro"   src="https://actions.google.com/sounds/v1/cartoon/boing.ogg" preload="auto"></audio>
+</div>
+
+<script>
+/* ----------  DADOS  ---------- */
+const levels=[
+  {id:'estudante',title:'Estudante',color:'#0b4f8a'},
+  {id:'publicador',title:'Publicador',color:'#16a34a'},
+  {id:'pioneiro',title:'Pioneiro',color:'#f97316'},
+  {id:'superintendente',title:'Superintendente',color:'#7c3aed'}
+];
+
+const questions={
+  estudante:[
+    {q:"Quem foi obediente a Jeová e construiu a arca para salvar sua família e os animais do dilúvio?",opts:["Moisés","Abraão","Noé","Elias"],a:2,desc:"Noé foi fiel a Jeová e construiu a arca conforme instruções divinas."},
+    {q:"Qual foi o sinal que Deus deu prometendo que nunca mais destruiria toda a terra com um dilúvio?",opts:["Estrela","Arco-íris","Pomba","Montanha"],a:1,desc:"O arco-íris foi dado como sinal da promessa de Jeová de nunca mais destruir toda a terra com um dilúvio."},
+    {q:"Quem recebeu de Jeová as tábuas com os Dez Mandamentos no monte Sinai?",opts:["Moisés","Arão","Elias","Josué"],a:0,desc:"Moisés recebeu as tábuas de pedra com os Dez Mandamentos."},
+    {q:"Quem foi o primeiro homem criado por Jeová?",opts:["Adão","Sete","Caim","Abel"],a:0,desc:"Adão foi criado por Jeová como o primeiro homem."},
+    {q:"Quem foi vendido por seus irmãos e depois se tornou um líder no Egito?",opts:["José","Balaão","Efraim","Noé"],a:0,desc:"José foi vendido e acabou governando o Egito com sabedoria."},
+    {q:"Quem enfrentou o gigante Golias e venceu com fé em Jeová?",opts:["Davi","Sansão","Saul","Neemias"],a:0,desc:"Davi confiou em Jeová e derrotou Golias."},
+    {q:"Qual profeta foi engolido por um grande peixe por fugir da ordem de Jeová?",opts:["Jonas","Amós","Oséias","Joel"],a:0,desc:"Jonas foi engolido por um grande peixe e depois cumpriu a ordem de Jeová."},
+    {q:"Qual rei pediu a Jeová sabedoria para governar Israel com justiça?",opts:["Saul","Salomão","Davi","Ezequias"],a:1,desc:"Salomão pediu sabedoria a Jeová e governou com justiça."},
+    {q:"Qual livro contém muitos cânticos e orações, conhecidos como salmos?",opts:["Provérbios","Salmos","Lamentações","Ester"],a:1,desc:"O livro de Salmos contém cânticos e orações inspiradas."},
+    {q:"Quem demonstrou grande fé ao construir um altar para Jeová em obediência?",opts:["Abraão","Caim","Davi","Samuel"],a:0,desc:"Abraão construiu um altar confiando plenamente em Jeová."}
+  ],
+  publicador:[
+    {q:"Quem desafiou os profetas de Baal e provou que Jeová é o Deus verdadeiro?",opts:["Elias","Eliseu","Isaías","Jeremias"],a:0,desc:"Elias confrontou os profetas de Baal demonstrando a supremacia de Jeová."},
+    {q:"Qual herói perdeu sua força quando o cabelo foi cortado?",opts:["Sansão","Davi","Saul","Elias"],a:0,desc:"Sansão perdeu sua força porque Jeová havia dado força ligada ao seu cabelo."},
+    {q:"Qual profeta teve a visão de ossos secos representando a restauração de Israel?",opts:["Ezequiel","Isaías","Amós","Malaquias"],a:0,desc:"Ezequiel viu ossos secos representando a restauração do povo."},
+    {q:"Quem interpretou os sonhos do faraó, ajudando o Egito a se preparar para fome?",opts:["Moisés","José","Daniel","Josué"],a:1,desc:"José interpretou os sonhos e salvou o Egito da fome."},
+    {q:"Qual cidade foi destruída por Jeová, sendo poupada apenas a família de Ló?",opts:["Jericó","Nínive","Babilônia","Sodoma"],a:3,desc:"Sodoma foi destruída, mas a família de Ló foi poupada."},
+    {q:"Quem foi ungido rei após Saul e consolidou o reino de Israel?",opts:["Davi","Salomão","Elias","Jônatas"],a:0,desc:"Davi foi ungido e governou Israel com sabedoria."},
+    {q:"Quem, filho de Davi, escreveu muitos provérbios e se destacou pela sabedoria?",opts:["Salomão","Ezequias","Josias","Matusalém"],a:0,desc:"Salomão escreveu muitos provérbios e era famoso por sua sabedoria."},
+    {q:"Qual apóstolo escreveu cartas importantes dirigidas à congregação cristã?",opts:["João","Pedro","Paulo","Tiago"],a:2,desc:"Paulo escreveu várias cartas dirigidas à congregação cristã."},
+    {q:"Qual foi o primeiro milagre público de Jesus registrado?",opts:["Multiplicação de pães","Cura de cego","Transformar água em vinho","Caminhar sobre águas"],a:2,desc:"Transformar água em vinho foi seu primeiro milagre registrado."},
+    {q:"Quem foi traído por um beijo e preso antes de sua morte?",opts:["Jesus","João","Pedro","Paulo"],a:0,desc:"Jesus foi traído por um beijo e preso, conforme as Escrituras."}
+  ],
+  pioneiro:[
+    {q:"Em qual livro são descritas as 7 trombetas e 7 taças da ira de Deus?",opts:["Daniel","Apocalipse","Ezequiel","Isaías"],a:1,desc:"Apocalipse fala sobre as 7 trombetas e 7 taças da ira de Deus."},
+    {q:"Qual profeta teve visão do trono de Deus e de seres viventes no céu?",opts:["Daniel","Ezequiel","Jeremias","Isaías"],a:1,desc:"Ezequiel teve visões do trono de Deus e seres viventes."},
+    {q:"Qual líder liderou a reconstrução de Jerusalém após o exílio babilônico?",opts:["Neemias","Esdras","Josué","Gideão"],a:0,desc:"Neemias liderou a reconstrução dos muros de Jerusalém."},
+    {q:"Qual profeta foi levado ao céu em um redemoinho de fogo?",opts:["Elias","Eliseu","Isaías","Ezequiel"],a:0,desc:"Elias foi levado ao céu em um redemoinho de fogo."},
+    {q:"Quem escreveu aproximadamente 13 cartas do Novo Testamento?",opts:["João","Paulo","Pedro","Tiago"],a:1,desc:"Paulo escreveu cerca de 13 cartas do Novo Testamento."},
+    {q:"Qual festa judaica relembra a libertação do Egito?",opts:["Páscoa","Pentecostes","Rosh Hashaná","Yom Kippur"],a:0,desc:"A Páscoa relembra a libertação do Egito."},
+    {q:"Quem interpretou a escrita na parede durante o reinado de Belsazar?",opts:["Daniel","Ezequiel","Jeremias","Moisés"],a:0,desc:"Daniel interpretou a escrita na parede."},
+    {q:"Qual livro fala sobre o 'servo sofredor' que cumpriu a vontade de Jeová?",opts:["Isaías","Amós","Joel","Jonas"],a:0,desc:"Isaías fala do servo sofredor que cumpre a vontade de Jeová."},
+    {q:"Em que cidade Paulo foi preso e apelou ao imperador?",opts:["Roma","Cesareia","Filipos","Corinto"],a:1,desc:"Paulo foi preso em Cesareia e apelou ao imperador."},
+    {q:"Quem presidiu o julgamento de Jesus antes de sua morte?",opts:["Herodes","Pilatos","Caiáfas","Pôncio"],a:1,desc:"Pilatos presidiu o julgamento de Jesus antes de sua morte."}
+  ],
+  superintendente:[
+    {q:"Na profecia das 70 semanas, de que livro se fala?",opts:["Ezequiel","Daniel","Isaías","Jeremias"],a:1,desc:"O livro de Daniel fala da profecia das 70 semanas."},
+    {q:"Qual termo descreve a morte substitutiva de Cristo pelos pecados da humanidade?",opts:["Redenção","Expiação","Justificação","Santificação"],a:1,desc:"Expiação descreve a morte de Cristo como substitutiva pelos pecados."},
+    {q:"Qual parâmetro cronológico é debatido nas profecias bíblicas?",opts:["Anos-luz","Períodos proféticos","Séculos","Dias solares"],a:1,desc:"Períodos proféticos são estudados em profecias bíblicas."},
+    {q:"Quem foi chamado de 'apóstolo dos gentios'?",opts:["Pedro","João","Paulo","Barnabé"],a:2,desc:"Paulo foi chamado de apóstolo dos gentios."},
+    {q:"Qual carta trata da justificação pela fé?",opts:["Gálatas","Romanos","Hebreus","Filipenses"],a:1,desc:"Romanos fala da justificação pela fé."},
+    {q:"Que evento marca o início do cumprimento das profecias messiânicas?",opts:["Nascimento de Cristo","Batismo de João","Entrada em Jerusalém","Ressurreição"],a:0,desc:"O nascimento de Cristo inicia o cumprimento messiânico."},
+    {q:"Qual profeta menor enfatiza a justiça social e obediência a Jeová?",opts:["Amós","Habacuque","Sofonias","Obadias"],a:0,desc:"Amós enfatiza justiça social e obediência a Jeová."},
+    {q:"Quem escreveu o livro do Apocalipse na ilha de Patmos?",opts:["Pedro","João","Paulo","Lucas"],a:1,desc:"João escreveu o Apocalipse na ilha de Patmos."},
+    {q:"Qual livro do Antigo Testamento contém muitos salmos?",opts:["Salmos","Provérbios","Eclesiastes","Isaías"],a:0,desc:"O livro de Salmos contém cânticos e orações."},
+    {q:"Quem foi lançado na cova dos leões por orar a Jeová?",opts:["Daniel","Elias","José","Paulo"],a:0,desc:"Daniel confiou em Jeová e foi protegido na cova dos leões."}
+  ]
+};
+
+/* ----------  ESTADO ---------- */
+let levelIdx=0, qIdx=0, score=0, lives=3, helpUsed=false, listaAtual=[], soundOn=true, erros=[];
+
+/* ----------  UTILS ---------- */
+const qs=s=>document.querySelector(s);
+const ce=(t,s='')=>{const e=document.createElement(t);e.innerHTML=s;return e};
+const play=a=>soundOn&&a.play();
+
+/* ----------  TELAS ---------- */
+function goHome(){
+  const ga=qs('#gameArea');
+  ga.innerHTML=`
+    <p>Recorde: <b>${localStorage.getItem('biblia-record')||0}</b></p>
+    <button class="btn-option" onclick="startPhase()">Iniciar Fase 1</button>
+    <button class="btn-option" onclick="showSettings()">Configurações</button>`;
+}
+
+function showSettings(){
+  const ga=qs('#gameArea');
+  ga.innerHTML=`
+    <h3>Configurações</h3>
+    <label><input type="checkbox" id="sound" ${soundOn?'checked':''}> Som</label><br>
+    <button class="btn-option" onclick="soundOn=qs('#sound').checked;goHome()">Voltar</button>
+    <button class="btn-option" onclick="if(confirm('Apagar recorde?')){localStorage.setItem('biblia-record',0);goHome();}">Zerar Recorde</button>`;
+}
+
+/* ----------  JOGO ---------- */
+function startPhase(){
+  listaAtual = questions[levels[levelIdx].id];
+  qIdx = 0; score = 0; lives = 3; erros = []; helpUsed=false;
+  document.body.style.setProperty('--bg',levels[levelIdx].color);
+  showQuestion();
+}
+
+function showQuestion(){
+  if(lives<=0){gameOver(false);return;}
+  if(qIdx>=listaAtual.length){phaseComplete();return;}
+  const q=listaAtual[qIdx];
+  const ga=qs('#gameArea');
+  ga.innerHTML=`
+    <h2>Fase ${levelIdx+1} - ${levels[levelIdx].title}</h2>
+    <div class="vidas">${'❤️'.repeat(lives)}</div>
+    <div class="progress"><div class="progress-bar" style="width:${(qIdx/listaAtual.length)*100}%"></div></div>
+    <h3>${q.q}</h3>
+    <div id="opts"></div>
+    ${!helpUsed?'<button id="help" class="btn-option" onclick="useHelp()">🎯 Eliminar 2 erradas (1×)</button>':''}
+    <div class="score">Pontos: ${score}</div>`;
+  const opts=qs('#opts');
+  q.opts.forEach((o,i)=>{
+    const b=ce('button',o); b.className='btn-option'; b.onclick=()=>answer(i);
+    opts.appendChild(b);
+  });
+}
+
+function answer(i){
+  const q=listaAtual[qIdx];
+  const buttons=document.querySelectorAll('.btn-option');
+  const correct=i===q.a;
+  buttons[i].classList.add(correct?'correct':'wrong');
+  if(!correct){buttons[q.a].classList.add('correct'); lives--; erros.push(q); play(qs('#erro'));}
+  else {score+=10; play(qs('#acerto'));}
+  qIdx++;
+  setTimeout(showQuestion,800);
+}
+
+function useHelp(){
+  if(helpUsed) return;
+  helpUsed=true;
+  const q=listaAtual[qIdx];
+  const buttons=document.querySelectorAll('.btn-option');
+  let wrong=[0,1,2,3].filter(i=>i!==q.a);
+  wrong.sort(()=>Math.random()-0.5);
+  buttons[wrong[0]].style.opacity='.3';
+  buttons[wrong[1]].style.opacity='.3';
+  qs('#help').disabled=true;
+}
+
+function phaseComplete(){
+  const ga=qs('#gameArea');
+  let msg = `<h2>Parabéns! Fase ${levelIdx+1} concluída!</h2>`;
+  if(erros.length>0){
+    msg += '<h3>Explicações das respostas incorretas:</h3>';
+    erros.forEach(e=>{ msg+=`<p class="explanation">${e.q} → ${e.desc}</p>`});
+  }
+  msg += `<p>Pontos: ${score}</p>`;
+  if(levelIdx<levels.length-1){
+    msg += `<button class="btn-option" onclick="nextPhase()">Próxima Fase</button>`;
+  } else {
+    msg += `<button class="btn-option" onclick="startPhase()">Reiniciar Jogo</button>`;
+  }
+  ga.innerHTML=msg;
+  party();
+}
+
+function nextPhase(){
+  levelIdx++;
+  startPhase();
+}
+
+function gameOver(won){
+  const ga=qs('#gameArea');
+  const rec = Math.max(score, localStorage.getItem('biblia-record')||0);
+  if(score>rec) localStorage.setItem('biblia-record',score);
+  ga.innerHTML=`<h2>${won?'Você venceu todas as fases!':'Suas vidas acabaram!'}</h2>
+    <p>Pontuação Final: ${score}</p>
+    <p>Recorde: <b>${rec}</b></p>
+    <button class="btn-option" onclick="startPhase()">Reiniciar Jogo</button>
+    <button class="btn-option" onclick="goHome()">Voltar ao Início</button>`;
+  party();
+}
+
+/* ----------  EFEITOS ---------- */
+function party(){
+  for(let i=0;i<60;i++){
+    const c=ce('div'); c.className='confetti';
+    c.style.left=Math.random()*100+'%';
+    c.style.setProperty('--hue',Math.random()*360);
+    c.style.animationDuration=(1.5+Math.random())+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),2500);
+  }
+  for(let i=0;i<20;i++){
+    const f=ce('div'); f.className='firework';
+    f.style.left=10+Math.random()*80+'%';
+    f.style.top=10+Math.random()*50+'%';
+    f.style.background=`hsl(${Math.random()*360},80%,60%)`;
+    document.body.appendChild(f);
+    setTimeout(()=>f.remove(),1000);
+  }
+}
+
+/* ----------  INÍCIO ---------- */
+goHome();
+</script>
+</body>
+</html>
